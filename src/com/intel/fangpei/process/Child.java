@@ -8,13 +8,13 @@ import com.intel.fangpei.logfactory.MonitorLog;
 import com.intel.fangpei.network.NIONodeHandler;
 import com.intel.fangpei.task.ExtendTask;
 import com.intel.fangpei.task.TaskRunner;
-import com.intel.fangpei.task.TaskRunner.ChildId;
+import com.intel.fangpei.task.TaskRunner.SplitId;
 import com.intel.fangpei.util.ConfManager;
 
 public class Child{
 	static MonitorLog ml = null;
 	  static TaskRunner tr = null;
-	  static ChildId childid = null;
+	  static SplitId childid = null;
 	  static String jvmId="";
 	  public static void main(String[] args) throws Throwable {
 		  ml = new MonitorLog();
@@ -68,14 +68,14 @@ public class Child{
 	    t.setDaemon(true);
 	    t.start();
 	    //wait time for task prepare
-	    long millis = 1000;
+	    long millis = 10;
 	    packet inprocessTaskPacket = null;
 	      while (true) {
 	        if ((inprocessTaskPacket = node.getReceivePacket()) == null) {
 	          Thread.sleep(millis);
 	          continue;
 	        } else {
-	        	System.out.println(inprocessTaskPacket.getBuffer());
+	        	System.out.println("proccess "+jvmId+" recevied:"+new String(inprocessTaskPacket.getBuffer().array()));
 	        	byte[] taskArgsbytes = inprocessTaskPacket.getArgs();
 	        	if(taskArgsbytes == null){
 	        		System.out.println("fack!!!-----------error");

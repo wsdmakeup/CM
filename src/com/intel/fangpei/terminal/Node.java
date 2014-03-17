@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.commons.lang.ArrayUtils;
 
@@ -20,7 +21,7 @@ import com.intel.fangpei.process.ProcessFactory;
 import com.intel.fangpei.process.ProcessManager;
 import com.intel.fangpei.task.TaskRunner;
 import com.intel.fangpei.task.TaskStrategy;
-import com.intel.fangpei.task.TaskTracker;
+import com.intel.fangpei.task.NodeTaskTracker;
 import com.intel.fangpei.util.ClientUtil;
 import com.intel.fangpei.util.ConfManager;
 import com.intel.fangpei.util.ReflectFactory;
@@ -31,7 +32,7 @@ public class Node extends Client {
 	SysInfo si = null;
 	String serverip = "";
 	int port = 0;
-	TaskTracker tracker = null;
+	NodeTaskTracker tracker = null;
 	int serviceDemoJvmid = -1;
 	boolean serviceDemoIsRunning = false;
 	Node(String serverip, int port) {
@@ -43,7 +44,7 @@ public class Node extends Client {
 		this.serverip = serverip;
 		this.port = port;
 		this.connect = new NIONodeHandler(serverip, port);
-		tracker = new TaskTracker(ml);//need port to pass in***
+		tracker = new NodeTaskTracker(ml);//need port to pass in***
 		si = SysInfo.GetSysHandler();
 	}
 
@@ -161,9 +162,20 @@ public class Node extends Client {
 		TaskRunner tr = new TaskRunner();
 		TaskStrategy strate = null;
 		strate = new TaskStrategy();
-		strate.addStrategy(tr.getDefault(),new String[]{classname});
+		strate.addStrategy(tr.getDefaultStrategy(),new String[]{classname});
 		tr.setTaskStrategy(strate);
 		tracker.addNewTaskMonitor(tr);
+		/*
+		 * example add strategy
+		Random r = new Random();
+		while(true){
+		try {
+			Thread.sleep(50*r.nextInt(100));
+		} catch (InterruptedException e) {
+			break;
+		}
+		strate.addStrategy(tr.getDefaultStrategy(),new String[]{classname});
+		}*/
 		return true;
 	}
 	private boolean extendTask(String  classname,String[] args){
@@ -172,7 +184,7 @@ public class Node extends Client {
 		strate = new TaskStrategy();
 		Map<String,String[]> map = new HashMap<String,String[]>();
 		map.put(classname,args);
-		strate.addStrategy(tr.getDefault(),map);
+		strate.addStrategy(tr.getDefaultStrategy(),map);
 		tr.setTaskStrategy(strate);
 		tracker.addNewTaskMonitor(tr);
 		return true;

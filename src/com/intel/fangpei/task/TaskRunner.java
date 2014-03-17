@@ -15,52 +15,55 @@ import com.intel.fangpei.network.rpc.RpcClient;
 import com.intel.fangpei.process.ChildStrategy;
 import com.intel.fangpei.process.ProcessFactory;
 import com.intel.fangpei.process.ProcessManager;
-import com.intel.fangpei.task.TaskRunner.ChildId;
-import com.intel.fangpei.task.TaskRunner.ChildRunner;
+import com.intel.fangpei.task.TaskRunner.SplitId;
+import com.intel.fangpei.task.TaskRunner.SplitRunner;
 import com.intel.fangpei.task.handler.Extender;
 import com.intel.fangpei.util.ClientUtil;
 import com.intel.fangpei.util.ConfManager;
+import com.intel.fangpei.util.Line.segment;
 import com.intel.fangpei.util.SystemUtil;
 
 public class TaskRunner implements Runnable{
 public static String TASK_WORK_DIR = null;
 private int taskid = -1;
-private ChildRunner child = null;
-private TaskTracker boss = null;
-private Map<ChildId,Integer> ChildIdTojvmId = null;
-private Map<Integer,ChildId> jvmIdToChildId = null;
-private Map<JvmRunner,String> jvmToPid = null;
-private Map<Integer,JvmTask> idToJvmTask = null;
-private Map<Integer,ChildStrategy> jvmIdToStrategy = null;
+private SplitRunner child = null;
+private NodeTaskTracker boss = null;
+//private Map<SplitId,Integer> ChildIdTojvmId = null;
+//private Map<Integer,SplitId> jvmIdToChildId = null;
+private Map<JvmRunner,String> jvmToid = null;
+private Map<Integer,ChildJvm> idToChildJvm = null;
+private Map<Integer,ChildStrategy> idToStrategy = null;
 private int runningChildsCount = 0;
 private int maxRunningChilds = 0;
 private int completeChilds = 0;
 private ChildStrategy defaultChildStrate = null;
-private TaskStrategy starte = null;
+private TaskStrategy taskstrategy = null;
+private Object maplock = null;
 public TaskRunner(){
-	ChildIdTojvmId = new HashMap<ChildId,Integer>();
-	jvmIdToChildId = new HashMap<Integer,ChildId>();
-	jvmToPid       = new HashMap<JvmRunner,String>();
-	idToJvmTask    = new HashMap<Integer,JvmTask>();
-	jvmIdToStrategy =new HashMap<Integer,ChildStrategy>();
+	maplock = new Object();
+	//ChildIdTojvmId = new HashMap<SplitId,Integer>();
+	//jvmIdToChildId = new HashMap<Integer,SplitId>();
+	jvmToid       = new HashMap<JvmRunner,String>();
+	idToChildJvm    = new HashMap<Integer,ChildJvm>();
+	idToStrategy =new HashMap<Integer,ChildStrategy>();
 }
 public void setTaskStrategy(TaskStrategy starte){
-	this.starte = starte;
+	this.taskstrategy = starte;
 }
-public void setBoss(TaskTracker tracker){
+public void setBoss(NodeTaskTracker tracker){
 	this.boss = tracker;
 	this.taskid = tracker.nextTaskID();
 }
 public void report(String s){
 	boss.report(s);
 }
-public ChildStrategy getDefault(){
+public ChildStrategy getDefaultStrategy(){
 	return new ChildStrategy();
 }
 /*
  * 3.add JvmTask to the TaskRunner
  */
-public synchronized JvmTask expandNewJvm(TaskEnv env){
+private ChildJvm expandNewJvm(TaskEnv env){
 	JvmRunner jvm = new JvmRunner("127.0.0.1",4399);
 	//jvm.setDaemon(true);
 	jvm.start();
@@ -72,27 +75,38 @@ public synchronized JvmTask expandNewJvm(TaskEnv env){
 			e.printStackTrace();
 		}
 	}
-	jvmToPid.put(jvm,""+jvm.getpid());
-	jvmIdToStrategy.put(jvm.getpid(), defaultChildStrate);
+	ChildJvm jvmtask = null;
+	synchronized(maplock){
+	jvmToid.put(jvm,""+jvm.getpid());
+	idToStrategy.put(jvm.getpid(), defaultChildStrate);
 	System.out.println("JvmTask jvmToPid:"+jvm.getpid());
-	JvmTask jvmtask = null;
 	if(env != null){
-		jvmtask = new JvmTask(jvm.getpid(),env);
+		jvmtask = new ChildJvm(jvm.getpid(),env);
 	}else{
-		jvmtask = new JvmTask(jvm.getpid());
+		jvmtask = new ChildJvm(jvm.getpid());
 	}
 	jvmtask.SetTaskRunner(this);
-	idToJvmTask.put(jvm.getpid(), jvmtask);
+	idToChildJvm.put(jvm.getpid(), jvmtask);
+	maplock.notifyAll();
+	}
 	return jvmtask;
 }
-public synchronized JvmTask expandNewJvm(){	
+private synchronized ChildJvm expandNewJvm(){	
 	return expandNewJvm(null);
 }
-public class ChildRunner{
+public void removeJvm(ChildJvm childjvm){
+	//remove jvmtoid jvm ~~here
+	synchronized(maplock){
+	idToStrategy.remove(childjvm.jvmId);
+	idToChildJvm.remove(childjvm.jvmId);
+	maplock.notifyAll();
+	}
+}
+public class SplitRunner{
 	private TaskEnv env = null;
 	String taskname = null;
 	String[] args = null;
-	public ChildRunner(String taskname){
+	public SplitRunner(String taskname){
 		this.taskname = taskname;
 		
 	}
@@ -155,9 +169,9 @@ public class JvmRunner extends Thread{
 /*
  * child conf metrix;
  */
-public class ChildId{
+public class SplitId{
 		public int id = 0;
-		public ChildId(){
+		public SplitId(){
 			this.id = new Random().nextInt(1000);
 		}
 		public int maxMemoryToUse = 0;
@@ -165,47 +179,48 @@ public class ChildId{
 public class TaskEnv{
 		public String env = "";
 }
-public static void setupWorkDir(ChildId childid, File file) {
+public static void setupWorkDir(SplitId childid, File file) {
 	
 }
 @Override
 public void run() {
-	ChildStrategy handler = null;
-	if(starte == null){
+	if(taskstrategy == null){
 		System.out.println("*no strategy to this TaskRunner*");
 		return;
 	}
+	//starte.addStrategy(this.getDefaultStrategy(), new String[]{"com.intel.developer.extend.myextend"});
 	boss.report("start taskRunner!");
-	ArrayList<ChildStrategy> childs = starte.ChildStrategys();
-	Iterator<ChildStrategy> childScanner = childs.iterator();
-	while(childScanner.hasNext()){
-		ChildStrategy child = childScanner.next();
-		JvmTask jvmtask = expandNewJvm();
-		Map<String, String[]> loads = child.getLoads();
-		Iterator<String> loadScanner = loads.keySet().iterator();
-		while(loadScanner.hasNext()){
-			String load = loadScanner.next();
-			ChildRunner tmpchild = new ChildRunner(load);
-//			if(loads.get(load)!=null){
-//				System.out.println("(*)"+loads.get(load)[0]+":"+loads.get(load)[1]);
-//			}
-			tmpchild.setArgs(loads.get(load));
-			jvmtask.assignNewChild(new ChildId(),tmpchild);
-		}
-		//get last work of the JVM
-		jvmtask.assignNewChild(new ChildId(), new ChildRunner(child.getLastWork()));
-		child.startStrategyRunner(boss, jvmtask);
-	}
+	registeAllChildStrategy();
 	boss.report("complete TaskRunner init!");
+	waitForChildUp();
 	while(true){
-		Iterator<Integer> i = idToJvmTask.keySet().iterator();
-		while(i.hasNext()){
-			JvmTask jt = idToJvmTask.get(i.next());
+		if(taskstrategy.hasNewStrategy()){
+			registeAllChildStrategy();
+			waitForChildUp();
+		}
+		synchronized(maplock){
+		Object[] ids = idToChildJvm.keySet().toArray();
+		int len =ids.length;
+		for(int i=0;i<len;i++){
+			ChildJvm jt = idToChildJvm.get(ids[i]);
 			if(jt.canStartNextThread()){
-				ChildRunner cr = (ChildRunner) jt.getChild().v;
+				segment s= jt.getSplit();
+				if(s == null){
+					System.out.println("ummm......we got null ....I don't know");
+				    continue;
+				}
+				System.out.println("[TaskRunner]get segment:"+s.v);
+				SplitRunner cr = (SplitRunner)s.v;
 				boss.send(jt.jvmId,cr);
 				boss.report("[TaskRunner]assign new task, thename is:"+cr.taskname);
 			}
+			if(jt.noSplitAssign()){
+				removeJvm(jt);
+				//
+				//taskstrategy.remove();
+			}
+		}
+		maplock.notifyAll();
 		}
 		try {
 			//System.out.print(".");
@@ -214,6 +229,50 @@ public void run() {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+}
+public void registeAllChildStrategy(){
+	HashMap<ChildStrategy,Boolean> childs = taskstrategy.ChildStrategys();
+	Object[] childScanner = childs.keySet().toArray();
+	ChildStrategy child = null;
+	int childnum = childScanner.length;
+	for(int i =0;i <childnum;i++){
+		child = (ChildStrategy)childScanner[i];
+		if(childs.get(child).equals(true)){
+			continue;
+		}
+		ChildJvm jvmtask = expandNewJvm();
+		Map<String, String[]> loads = child.getLoads();
+		Iterator<String> loadScanner = loads.keySet().iterator();
+		while(loadScanner.hasNext()){
+			String load = loadScanner.next();
+			SplitRunner tmpchild = new SplitRunner(load);
+//			if(loads.get(load)!=null){
+//				System.out.println("(*)"+loads.get(load)[0]+":"+loads.get(load)[1]);
+//			}
+			tmpchild.setArgs(loads.get(load));
+			jvmtask.assignNewSplit(new SplitId(),tmpchild);
+		}
+		//get last work of the JVM
+		jvmtask.assignNewSplit(new SplitId(), new SplitRunner(child.getLastWork()));
+		child.startStrategyRunner(boss, jvmtask);
+		childs.put(child, true);
+	}
+	taskstrategy.flagRunning();
+}
+public void extendNewStrategy(ChildStrategy strategy,String[] classname){
+	taskstrategy.addStrategy(strategy, classname);
+}
+public void extendNewStrategy(ChildStrategy strategy,Map<String,String[]> loadToArgs){
+	taskstrategy.addStrategy(strategy, loadToArgs);
+}
+private void waitForChildUp() {
+	try {
+		Thread.sleep(1000);
+	} catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
 	}
 	
 }

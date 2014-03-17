@@ -3,8 +3,8 @@ package com.intel.fangpei.process;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.intel.fangpei.task.JvmTask;
-import com.intel.fangpei.task.TaskTracker;
+import com.intel.fangpei.task.ChildJvm;
+import com.intel.fangpei.task.NodeTaskTracker;
 import com.intel.fangpei.util.ClientUtil;
 
 public class ChildStrategy extends Thread{
@@ -27,24 +27,24 @@ public class ChildStrategy extends Thread{
 	public  boolean canDoNextWork(){	
 		return true;
 	}
-	public void startStrategyRunner(TaskTracker boss, JvmTask taskManager){
+	public void startStrategyRunner(NodeTaskTracker boss, ChildJvm taskManager){
 		runner = new StartegyRunner(this,boss,taskManager);
 		//runner.setDaemon(true);
 		runner.start();
 	}
 	public class StartegyRunner extends Thread{
-		private TaskTracker boss = null;
-		private JvmTask taskManager = null;
+		private NodeTaskTracker boss = null;
+		private ChildJvm taskManager = null;
 		private ChildStrategy childStrate = null;
-		public StartegyRunner(ChildStrategy childStrate,TaskTracker boss, JvmTask taskManager){
+		public StartegyRunner(ChildStrategy childStrate,NodeTaskTracker boss, ChildJvm taskManager){
 			this.childStrate = childStrate;
 			this.boss = boss;
 			this.taskManager = taskManager;
 		}
 		public void run(){
 			System.out.println("[ChildStartegy]boss is running:"+boss.isRunning());
-			System.out.println("[ChildStartegy]has no work to assign?:"+taskManager.noTaskAssign());
-			while(boss.isRunning()&&!taskManager.noTaskAssign()){	
+			System.out.println("[ChildStartegy]has no work to assign?:"+taskManager.noSplitAssign());
+			while(boss.isRunning()&&!taskManager.noSplitAssign()){	
 				if(childStrate.canDoNextWork()){
 					if(taskManager.nextWork()){
 					System.out.println("[ChildStartegy]assign new task");
