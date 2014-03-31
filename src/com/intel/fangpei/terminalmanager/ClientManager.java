@@ -5,6 +5,7 @@ import java.nio.channels.SelectionKey;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import com.intel.fangpei.BasicMessage.BasicMessage;
+import com.intel.fangpei.BasicMessage.HeartBeatMessage;
 import com.intel.fangpei.BasicMessage.packet;
 import com.intel.fangpei.network.NIOServerHandler;
 import com.intel.fangpei.network.SelectionKeyManager;
@@ -55,6 +56,14 @@ public class ClientManager extends SlaveManager{
 				if(command ==BasicMessage.OP_MESSAGE){
 					System.out.println("[ClientManager]add NIO write interest for Admin");
 					nioserverhandler.pushWriteSegement(admin,  new packet(buffer));
+					return true;
+				}
+				//add what to do when get node heart beat call back segment
+				if(command == HeartBeatMessage.HEART_BEAT_CALLBACK){
+				//	System.out.println("registe node key");
+					System.out.println(new String(args));
+					keymanager.registeHeartBeat(key,new String(args));
+				//	System.out.println(key.toString()+"------"+keymanager.getAdmin().toString());
 					return true;
 				}
 			}

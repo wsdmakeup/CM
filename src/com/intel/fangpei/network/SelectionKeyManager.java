@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map.Entry;
 
 import com.intel.fangpei.BasicMessage.packet;
 import com.intel.fangpei.logfactory.MonitorLog;
@@ -15,6 +16,8 @@ import com.intel.fangpei.util.ServerUtil;
 
 public class SelectionKeyManager {
 	private MonitorLog ml = null;
+	
+	
 	// the cluster's nodes list
 	//private Collection<SelectionKey> nodes = new ArrayList<SelectionKey>();
 	protected HashMap<SelectionKey,String> nodes = new HashMap<SelectionKey,String>();
@@ -26,6 +29,10 @@ public class SelectionKeyManager {
 	protected LinkedList<SelectionKey> keys_cancel = new LinkedList<SelectionKey>();
 	private LinkedList<SelectionKey> receivequeue = new LinkedList<SelectionKey>();
 	private SelectionKey Admin = null;
+	
+	//the heart beat list
+	private HashMap<SelectionKey,Integer> heart_list = new HashMap<>();
+	private HashMap<SelectionKey, String> host_list = new HashMap<>();
 
 	public SelectionKey getAdmin() {
 		return Admin;
@@ -257,5 +264,38 @@ public class SelectionKeyManager {
 			SelectionKey key = receivequeue.remove();
 			return key;
 	}
-
+	
+	public void beginHeartBeat(){
+		synchronized (heart_list) {
+			Iterator<Entry<SelectionKey, Integer>> itr = heart_list.entrySet().iterator();
+			while(itr.hasNext()){
+				Entry<SelectionKey, Integer> node_record = itr.next();
+				heart_list.put(node_record.getKey(), node_record.getValue()+1);
+			}
+		}
+	}
+	public void registeHeartBeat(SelectionKey key,String hostname){
+		synchronized (heart_list) {	
+				heart_list.put(key, 0);
+				host_list.put(key, hostname);
+		}
+	
+	}
+	public void checkHeartBeat(){
+		int max_try = HeartBeatThread.HEART_BEAT_OUT_TIME/HeartBeatThread.HEART_BEAT_INTERVAL;
+		synchronized (heart_list) {
+			System.out.println("we have "+heart_list.size()+" nodes");
+			Iterator<Entry<SelectionKey, Integer>> itr = heart_list.entrySet().iterator();
+			while(itr.hasNext()){
+				Entry<SelectionKey, Integer> node_record = itr.next();
+				//System.out.println("Node have "+node_record.getKey().toString()+"--"+nodes.get(node_record.getKey()));
+				if(node_record.getValue()>max_try){
+					System.out.println("Node "+host_list.get(node_record.getKey())+" is offline!");
+					heart_list.remove(node_record.getKey());
+				}
+			}
+			
+		}
+	}
+	
 }

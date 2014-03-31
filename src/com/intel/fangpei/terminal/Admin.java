@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import com.intel.fangpei.BasicMessage.BasicMessage;
 import com.intel.fangpei.BasicMessage.ServiceMessage;
 import com.intel.fangpei.BasicMessage.packet;
+import com.intel.fangpei.network.HeartBeatThread;
 import com.intel.fangpei.network.NIOAdminHandler;
 import com.intel.fangpei.util.CommandPhraser;
 import com.intel.fangpei.util.ConfManager;
@@ -20,17 +21,22 @@ public class Admin extends Client {
 	ByteBuffer buffer = ByteBuffer.allocate(1024);
 	String serverip = "";
 	int port = 0;
+	//add heartbeat thread
+	private HeartBeatThread hbThread = null;
 
 	public Admin(String serverip, int port) {
 		this.serverip = serverip;
 		this.port = port;
 		this.connect = new NIOAdminHandler(serverip, port);
+		this.hbThread = new HeartBeatThread(connect);
 	}
 
 	@Override
 	public void run() {
 		try {
+			//heart beat thread start
 			new Thread(connect).start();
+			new Thread(hbThread).start();
 			while (true) {
 				byte[] b = new byte[1024];
 				System.out.print("--->]:");

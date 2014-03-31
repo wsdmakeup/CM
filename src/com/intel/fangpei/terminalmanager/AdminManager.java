@@ -8,6 +8,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import com.intel.fangpei.BasicMessage.BasicMessage;
+import com.intel.fangpei.BasicMessage.HeartBeatMessage;
 import com.intel.fangpei.BasicMessage.ServiceMessage;
 import com.intel.fangpei.BasicMessage.packet;
 import com.intel.fangpei.logfactory.MonitorLog;
@@ -55,6 +56,20 @@ public class AdminManager extends SlaveManager{
 			HandOneNode();
 			return true;
 		}
+		//add heart beat start operation, set all node heart beat try time+1
+		if (command == HeartBeatMessage.HEART_BEAT_BEGIN){
+			//ml.log("start heart beat, all node try time +1");
+			//System.out.println("am handle heart_beat_begin");
+		
+			keymanager.beginHeartBeat();
+			
+		}
+		//add  after heart_beat_interval, heart beat check,
+		if(command == HeartBeatMessage.HEART_BEAT_CHECK){
+			
+			keymanager.checkHeartBeat();
+			return true;
+		}
 		AllHandsHandler();
 		return true;
 	}
@@ -77,6 +92,10 @@ public class AdminManager extends SlaveManager{
 	public String AllHandsHandler() {
 		packet p = null;
 		switch (command) {
+		case HeartBeatMessage.HEART_BEAT_BEGIN:
+			p = new packet(BasicMessage.ADMIN,command);
+			keymanager.handleAllNodes(nioserverhandler,p);
+			break;
 		case BasicMessage.OP_EXEC:
 		case ServiceMessage.SERVICE:
 		case ServiceMessage.THREAD:
@@ -100,6 +119,7 @@ public class AdminManager extends SlaveManager{
 			packet reply3 = new packet(BasicMessage.SERVER, BasicMessage.OK);
 			nioserverhandler.pushWriteSegement(admin,reply3);
 			break;
+		
 		}
 		return "";
 	}

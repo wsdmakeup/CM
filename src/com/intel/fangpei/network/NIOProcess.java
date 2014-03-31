@@ -3,6 +3,7 @@ package com.intel.fangpei.network;
 import java.nio.BufferUnderflowException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+
 import com.intel.fangpei.BasicMessage.packet;
 import com.intel.fangpei.logfactory.MonitorLog;
 import com.intel.fangpei.network.PacketLine.segment;
@@ -11,6 +12,11 @@ import com.intel.fangpei.terminalmanager.ClientManager;
 import com.intel.fangpei.util.SystemUtil;
 
 public class NIOProcess implements Runnable {
+	
+	//admin last active time
+	private  long lastactive=-1;
+	private boolean isExsist_Admin = true;
+	
 	private MonitorLog ml = null;
 	SelectionKeyManager keymanager = null;
 	ClientManager cm = null;
@@ -38,6 +44,8 @@ public class NIOProcess implements Runnable {
 	@Override
 	public void run() {
 		while (true) {
+			//add check admin 
+			checkAdmin();
 			segment se = nioserverhandler.getNewSegement();
 			if (se == null) {
 				try {
@@ -52,6 +60,9 @@ public class NIOProcess implements Runnable {
 			SelectionKey key = se.key;
 			packet p = se.p;
 			if (key.equals(keymanager.getAdmin())) {
+				registeAdminActvie();
+				
+				
 				System.out.println("[NIOProcess]this a packet from admin");
 				am = new AdminManager(ml,keymanager.getAdmin(), keymanager,nioserverhandler);
 					if (am.Handle(key,p)) {
@@ -70,6 +81,28 @@ public class NIOProcess implements Runnable {
 			}
 		}
 
+	}
+	
+	private synchronized void checkAdmin(){
+		if(lastactive==-1){
+			if(isExsist_Admin){
+				isExsist_Admin=false;
+				System.out.println("there is no admin node!");
+			}
+		}else{
+			if(System.currentTimeMillis()-lastactive>HeartBeatThread.HEART_BEAT_OUT_TIME*1000){
+				lastactive=-1;
+				System.out.println("Admin is offline!");
+			}
+		}
+	
+	}
+	private synchronized void registeAdminActvie(){
+		this.lastactive = System.currentTimeMillis();
+		if(!isExsist_Admin){
+			isExsist_Admin = true;
+			System.out.println("Admin is online!");
+		}
 	}
 
 }
