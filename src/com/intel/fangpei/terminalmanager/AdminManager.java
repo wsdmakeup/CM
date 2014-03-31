@@ -184,17 +184,8 @@ public class AdminManager extends SlaveManager{
 			packet reply = new packet(BasicMessage.SERVER, BasicMessage.OK);
 			nioserverhandler.pushWriteSegement(admin,reply);
 			break;
-<<<<<<< HEAD
-		case BasicMessage.OP_lOAD_DISK:
-			p = new packet(BasicMessage.SERVER, command, args);
-			System.out.println("exec admin's load disk command!");
-			keymanager.handleAllNodes(nioserverhandler,p);
-			packet reply3 = new packet(BasicMessage.SERVER, BasicMessage.OK);
-			nioserverhandler.pushWriteSegement(admin,reply3);
-			break;
-		
-=======
->>>>>>> CMOrigin/master
+
+
 		}
 		return "";
 	}

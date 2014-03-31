@@ -15,6 +15,7 @@ import com.intel.fangpei.BasicMessage.BasicMessage;
 import com.intel.fangpei.BasicMessage.HeartBeatMessage;
 import com.intel.fangpei.BasicMessage.ServiceMessage;
 import com.intel.fangpei.BasicMessage.packet;
+import com.intel.fangpei.FileSystem.Directory;
 import com.intel.fangpei.SystemInfoCollector.SysInfo;
 import com.intel.fangpei.logfactory.MonitorLog;
 import com.intel.fangpei.network.NIONodeHandler;
@@ -248,7 +249,7 @@ public class Node extends Client {
 		return true;
 
 	}
-<<<<<<< HEAD
+
 
 	private boolean loadData_Disk(String[] args) {
 		String path = args[1];
@@ -276,6 +277,5 @@ public class Node extends Client {
 		// b.start();
 		return true;
 	}
-=======
->>>>>>> CMOrigin/master
+
 }
