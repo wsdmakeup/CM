@@ -15,7 +15,6 @@ import com.intel.fangpei.BasicMessage.BasicMessage;
 import com.intel.fangpei.BasicMessage.HeartBeatMessage;
 import com.intel.fangpei.BasicMessage.ServiceMessage;
 import com.intel.fangpei.BasicMessage.packet;
-import com.intel.fangpei.FileSystem.Directory;
 import com.intel.fangpei.SystemInfoCollector.SysInfo;
 import com.intel.fangpei.logfactory.MonitorLog;
 import com.intel.fangpei.network.NIONodeHandler;
@@ -250,32 +249,5 @@ public class Node extends Client {
 
 	}
 
-
-	private boolean loadData_Disk(String[] args) {
-		String path = args[1];
-		File schema = new File(path);
-		if (!schema.exists()) {
-			ml.error("Get a load data command ,but the schema path"
-					+ " parameter isn't contain any usable schema file");
-			return false;
-		}
-		long predictGenes = 0;
-		try {
-			predictGenes = Long.parseLong(args[2]);
-		} catch (Exception e) {
-			ml.error("Get a load data command ,but the pridictgenes"
-					+ " parameter is not a int or long type");
-			return false;
-		}
-		Directory d = new Directory();
-		d.initDir();
-		// DiskGeneDataTask g = new DiskGeneDataTask(ml,schema, predictGenes);
-		// DiskPutDataTask p = new DiskPutDataTask(ml,g, predictGenes,d);
-		// Thread a = new Thread(g);
-		// Thread b = new Thread(p);
-		// a.start();
-		// b.start();
-		return true;
-	}
 
 }

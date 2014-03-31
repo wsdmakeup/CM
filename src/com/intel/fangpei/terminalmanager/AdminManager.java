@@ -185,7 +185,6 @@ public class AdminManager extends SlaveManager{
 			nioserverhandler.pushWriteSegement(admin,reply);
 			break;
 
-
 		}
 		return "";
 	}
