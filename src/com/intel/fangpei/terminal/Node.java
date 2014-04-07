@@ -3,6 +3,7 @@ package com.intel.fangpei.terminal;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,6 +18,7 @@ import com.intel.fangpei.BasicMessage.ServiceMessage;
 import com.intel.fangpei.BasicMessage.packet;
 import com.intel.fangpei.SystemInfoCollector.SysInfo;
 import com.intel.fangpei.logfactory.MonitorLog;
+import com.intel.fangpei.network.HeartBeatThread;
 import com.intel.fangpei.network.NIONodeHandler;
 import com.intel.fangpei.process.ProcessFactory;
 import com.intel.fangpei.process.ProcessManager;
@@ -38,6 +40,8 @@ public class Node extends Client {
 	NodeTaskTracker tracker = null;
 	int serviceDemoJvmid = -1;
 	boolean serviceDemoIsRunning = false;
+	//add heartbeat thread
+	private HeartBeatThread hbThread = null;
 
 	Node(String serverip, int port) {
 		try {
@@ -49,6 +53,12 @@ public class Node extends Client {
 		this.port = port;
 		this.connect = new NIONodeHandler(serverip, port);
 		tracker = new NodeTaskTracker(ml);// need port to pass in***
+		try {
+			this.hbThread = new HeartBeatThread(connect,InetAddress.getLocalHost().getHostName());
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		si = SysInfo.GetSysHandler();
 	}
 
@@ -60,7 +70,10 @@ public class Node extends Client {
 			return;
 		}
 		try {
+			
 			new Thread(connect).start();
+			//heart beat thread start
+			new Thread(hbThread).start();
 			packet p = null;
 			while (true) {
 				if (connect.waitReadNext()) {

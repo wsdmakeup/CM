@@ -25,7 +25,15 @@ import com.intel.fangpei.util.ServerUtil;
  *
  */
 public class AdminManager extends SlaveManager{
-	class ServerTaskMonitor{
+	
+	private static ServerTaskMonitor stm;
+	public static ServerTaskMonitor getServerTaskMonitorInstance(){
+		if(stm == null){
+			stm = new ServerTaskMonitor();
+		}
+		return stm;
+	}
+	 public static class ServerTaskMonitor{
 		//key taskid value map
 		private HashMap<Integer, HashMap<Integer, Double>> response = new HashMap<Integer,HashMap<Integer, Double>>();
 		public boolean newTask(int taskid){

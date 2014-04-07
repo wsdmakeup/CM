@@ -33,7 +33,7 @@ public class SelectionKeyManager {
 	private SelectionKey Admin = null;
 	
 	//the heart beat list
-	private HashMap<SelectionKey,Integer> heart_list = new HashMap<>();
+	private HashMap<SelectionKey,Long> heart_list = new HashMap<>();
 	private HashMap<SelectionKey, String> host_list = new HashMap<>();
 
 	public SelectionKey getAdmin() {
@@ -269,29 +269,31 @@ public class SelectionKeyManager {
 	
 	public void beginHeartBeat(){
 		synchronized (heart_list) {
-			Iterator<Entry<SelectionKey, Integer>> itr = heart_list.entrySet().iterator();
+			Iterator<Entry<SelectionKey, Long>> itr = heart_list.entrySet().iterator();
 			while(itr.hasNext()){
-				Entry<SelectionKey, Integer> node_record = itr.next();
+				Entry<SelectionKey, Long> node_record = itr.next();
 				heart_list.put(node_record.getKey(), node_record.getValue()+1);
 			}
 		}
 	}
 	public void registeHeartBeat(SelectionKey key,String hostname){
 		synchronized (heart_list) {	
-				heart_list.put(key, 0);
+				long now_time = System.currentTimeMillis();
+				heart_list.put(key, now_time);
 				host_list.put(key, hostname);
 		}
 	
 	}
 	public void checkHeartBeat(){
-		int max_try = HeartBeatThread.HEART_BEAT_OUT_TIME/HeartBeatThread.HEART_BEAT_INTERVAL;
+		int timeout = HeartBeatThread.HEART_BEAT_OUT_TIME;
 		synchronized (heart_list) {
 			System.out.println("we have "+heart_list.size()+" nodes");
-			Iterator<Entry<SelectionKey, Integer>> itr = heart_list.entrySet().iterator();
+			Iterator<Entry<SelectionKey, Long>> itr = heart_list.entrySet().iterator();
 			while(itr.hasNext()){
-				Entry<SelectionKey, Integer> node_record = itr.next();
+				Entry<SelectionKey, Long> node_record = itr.next();
 				//System.out.println("Node have "+node_record.getKey().toString()+"--"+nodes.get(node_record.getKey()));
-				if(node_record.getValue()>max_try){
+				long now_time = System.currentTimeMillis();
+				if(now_time -node_record.getValue()>timeout*1000){
 					System.out.println("Node "+host_list.get(node_record.getKey())+" is offline!");
 					heart_list.remove(node_record.getKey());
 				}

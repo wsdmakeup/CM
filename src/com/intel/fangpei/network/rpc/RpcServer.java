@@ -8,14 +8,26 @@ import org.apache.xmlrpc.server.XmlRpcServer;
 import org.apache.xmlrpc.server.XmlRpcServerConfigImpl;
 import org.apache.xmlrpc.webserver.WebServer;
 
+import com.intel.fangpei.logfactory.MonitorLog;
+import com.intel.fangpei.network.NIOServerHandler;
+import com.intel.fangpei.network.SelectionKeyManager;
+import com.intel.fangpei.terminal.Admin;
+import com.intel.fangpei.terminalmanager.AdminManager;
 import com.intel.fangpei.util.ReflectFactory;
 
 public class RpcServer {
 private WebServer webServer = null;
 private XmlRpcServer xmlRpcServer = null;
 private boolean isRunning = false;
+private AdminManager am;
+private AdminManager.ServerTaskMonitor stm;
 public RpcServer(int port){
     webServer    = new WebServer(port);
+	}
+public RpcServer(int port, MonitorLog ml, SelectionKeyManager keymanager,NIOServerHandler nioserverhandler){
+    webServer    = new WebServer(port);
+    am = new AdminManager(ml, keymanager.getAdmin(), keymanager, nioserverhandler);
+   
 	}
 public void StartRPCServer(){
     xmlRpcServer = webServer.getXmlRpcServer();
@@ -41,6 +53,15 @@ public void StartRPCServer(){
 //      phm.addHandler(org.apache.xmlrpc.demo.proxy.Adder.class.getName(),
 //          org.apache.xmlrpc.demo.webserver.proxy.impls.AdderImpl.class);
      
+   
+    try {
+		phm.addHandler("TaskChildHandler", TaskChildHandler.class);
+		phm.addHandler("TaskHandler", TaskHandler.class);
+		
+	} catch (XmlRpcException e1) {
+		// TODO Auto-generated catch block
+		e1.printStackTrace();
+	}
     xmlRpcServer.setHandlerMapping(phm);
   
     XmlRpcServerConfigImpl serverConfig =

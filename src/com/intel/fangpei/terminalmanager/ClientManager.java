@@ -63,9 +63,9 @@ public class ClientManager extends SlaveManager{
 					return true;
 				}
 				//add what to do when get node heart beat call back segment
-				if(command == HeartBeatMessage.HEART_BEAT_CALLBACK){
+				if(command == HeartBeatMessage.HEART_BEAT){
 				//	System.out.println("registe node key");
-					System.out.println(new String(args));
+				//	System.out.println(new String(args));
 					keymanager.registeHeartBeat(key,new String(args));
 				//	System.out.println(key.toString()+"------"+keymanager.getAdmin().toString());
 					return true;

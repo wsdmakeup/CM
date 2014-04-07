@@ -164,6 +164,7 @@ public class JvmRunner extends Thread{
 		}
 		started = true;
 		ProcessManager.start(processid);
+		//add RPC registe child
 	}	
 }
 /*

@@ -4,6 +4,7 @@ import java.nio.BufferUnderflowException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 
+import com.intel.fangpei.BasicMessage.HeartBeatMessage;
 import com.intel.fangpei.BasicMessage.packet;
 import com.intel.fangpei.logfactory.MonitorLog;
 import com.intel.fangpei.network.PacketLine.segment;
@@ -20,8 +21,8 @@ import com.intel.fangpei.util.SystemUtil;
 public class NIOProcess implements Runnable {
 	
 	//admin last active time
-	private  long lastactive=-1;
-	private boolean isExsist_Admin = true;
+	private static long lastCheck=-1;
+	
 	
 	private MonitorLog ml = null;
 	SelectionKeyManager keymanager = null;
@@ -50,8 +51,12 @@ public class NIOProcess implements Runnable {
 	@Override
 	public void run() {
 		while (true) {
-			//add check admin 
-			checkAdmin();
+			long now_time = System.currentTimeMillis();
+			if(now_time-lastCheck>HeartBeatThread.HEART_BEAT_INTERVAL*1000){
+				keymanager.checkHeartBeat();
+				lastCheck = now_time;
+			}
+			
 			segment se = nioserverhandler.getNewSegement();
 			if (se == null) {
 				try {
@@ -66,7 +71,7 @@ public class NIOProcess implements Runnable {
 			SelectionKey key = se.key;
 			packet p = se.p;
 			if (key.equals(keymanager.getAdmin())) {
-				registeAdminActvie();
+				
 				
 				
 				System.out.println("[NIOProcess]this a packet from admin");
@@ -89,26 +94,26 @@ public class NIOProcess implements Runnable {
 
 	}
 	
-	private synchronized void checkAdmin(){
-		if(lastactive==-1){
-			if(isExsist_Admin){
-				isExsist_Admin=false;
-				System.out.println("there is no admin node!");
-			}
-		}else{
-			if(System.currentTimeMillis()-lastactive>HeartBeatThread.HEART_BEAT_OUT_TIME*1000){
-				lastactive=-1;
-				System.out.println("Admin is offline!");
-			}
-		}
-	
-	}
-	private synchronized void registeAdminActvie(){
-		this.lastactive = System.currentTimeMillis();
-		if(!isExsist_Admin){
-			isExsist_Admin = true;
-			System.out.println("Admin is online!");
-		}
-	}
+//	private synchronized void checkAdmin(){
+//		if(lastactive==-1){
+//			if(isExsist_Admin){
+//				isExsist_Admin=false;
+//				System.out.println("there is no admin node!");
+//			}
+//		}else{
+//			if(System.currentTimeMillis()-lastactive>HeartBeatThread.HEART_BEAT_OUT_TIME*1000){
+//				lastactive=-1;
+//				System.out.println("Admin is offline!");
+//			}
+//		}
+//	
+//	}
+//	private synchronized void registeAdminActvie(){
+//		lastactive = System.currentTimeMillis();
+//		if(!isExsist_Admin){
+//			isExsist_Admin = true;
+//			System.out.println("Admin is online!");
+//		}
+//	}
 
 }
