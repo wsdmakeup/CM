@@ -1,6 +1,10 @@
 package com.intel.fangpei.terminal;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.hadoop.hbase.util.Bytes;
 
@@ -9,6 +13,7 @@ import com.intel.fangpei.BasicMessage.ServiceMessage;
 import com.intel.fangpei.BasicMessage.packet;
 import com.intel.fangpei.network.HeartBeatThread;
 import com.intel.fangpei.network.NIOAdminHandler;
+import com.intel.fangpei.network.rpc.RpcClient;
 import com.intel.fangpei.util.CommandPhraser;
 import com.intel.fangpei.util.ConfManager;
 /**
@@ -60,6 +65,15 @@ public class Admin extends Client {
 		byte COMMAND = CommandPhraser.GetUserInputCommand(command);
 		if(COMMAND == BasicMessage.OP_HELP){
 			printHelp();
+		}
+		//add tasks command
+		if(COMMAND == BasicMessage.TASKS){
+			getTasks();
+		}
+		if(COMMAND == BasicMessage.TASKINFO){
+			int task_id = Integer.parseInt(command.substring(command.indexOf(" "),
+					command.length()));
+			getTaskInfo(task_id);
 		}
 		if (COMMAND == BasicMessage.OP_EXEC) {
 			try{
@@ -118,6 +132,34 @@ public class Admin extends Client {
 		System.out.println("quit          close the admin process");
 		System.out.println("sysinfo       get the cluster's system info");
 		System.out.println("service       execute a class which extend Extender in a Thread");
+	}
+	public static void getTasks(){
+		RpcClient rpcclient = RpcClient.getInstance();
+		Object[] params = new Object[]{};
+		List<Integer> tasks = (List<Integer>)rpcclient.execute("TaskHandler.getTasks", params);
+		if(tasks.size()!=0){
+			System.out.print("Tasks: ");
+			for(int i=0;i<tasks.size()-1;i++){
+				System.out.print(tasks.get(i)+", ");
+			}
+			System.out.println(tasks.get(tasks.size()-1)+".");
+		}else{
+			System.out.println("There is no tasks in cluster!");
+		}
+	}
+	public static void getTaskInfo(int task_id){
+		RpcClient rpcclient = RpcClient.getInstance();
+		Object[] params = new Object[]{task_id};
+		Map<Integer,Double> task_info = (Map<Integer,Double>)rpcclient.execute("TaskHandler.getTaskInfo", params);
+		Iterator<Entry<Integer,Double>> itr = task_info.entrySet().iterator();
+		System.out.println("Task Info of: "+task_id);
+		while(itr.hasNext()){
+			Entry<Integer, Double> tmp = itr.next();
+			int child_tmp = tmp.getKey();
+			Double percent_tmp = tmp.getValue()*100;
+			System.out.println("Child: "+child_tmp+", complete "+percent_tmp+"%");
+		}
+		System.out.println("----------");
 	}
 	public static void main(String[] args) {
 		ConfManager.addResource(null);

@@ -40,6 +40,12 @@ public class CommandPhraser {
 		if(s[0].equals("service")){
 			return ServiceMessage.SERVICE;
 		}
+		if(s[0].equals("tasks")){
+			return BasicMessage.TASKS;
+		}
+		if(s[0].equals("tasks")){
+			return BasicMessage.TASKINFO;
+		}
 		return (byte) -1;
 	}
 

@@ -61,11 +61,11 @@ public class SelectSocket {
 			ml.log("/*Start RPC Server...");
 			
 			ml.log("/*Start " + processThreadNum + " Key handle Threads...");
-			final SelectionKeyManager keymanager = new SelectionKeyManager();
+			SelectionKeyManager keymanager = new SelectionKeyManager();
 			ml.log("/*Key handle Threads had started!");
 			ml.log("/*Server Listening at port: " + PORT_NUMBER);
 			ml.log("/*Start Server...");
-			final NIOServerHandler nioserverhandler = new NIOServerHandler(1234,ml,keymanager);
+			NIOServerHandler nioserverhandler = new NIOServerHandler(1234,ml,keymanager);
 			new Thread(nioserverhandler).start();
 			Thread t = new Thread(){
 				public void run(){
@@ -79,8 +79,6 @@ public class SelectSocket {
 			t.start();
 			for (int i = 0; i < processThreadNum; i++)
 			new Thread(new NIOProcess(keymanager,nioserverhandler)).start();
-			RPCTest test = new RPCTest();
-			test.test();
 			ml.log("/*Server has been started!");
 	}
 }

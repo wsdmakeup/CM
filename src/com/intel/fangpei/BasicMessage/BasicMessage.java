@@ -23,4 +23,6 @@ public class BasicMessage {
 	public static final byte OP_HELP = (byte) 8;
 	public static final byte OK = (byte) 7;
 	public static final byte OP_SH = (byte) 12;
+	public static final byte TASKS = (byte) 31;
+	public static final byte TASKINFO = (byte) 32;
 }

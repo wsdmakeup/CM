@@ -287,14 +287,14 @@ public class SelectionKeyManager {
 	public void checkHeartBeat(){
 		int timeout = HeartBeatThread.HEART_BEAT_OUT_TIME;
 		synchronized (heart_list) {
-			System.out.println("we have "+heart_list.size()+" nodes");
+			ml.log("we have "+heart_list.size()+" nodes");
 			Iterator<Entry<SelectionKey, Long>> itr = heart_list.entrySet().iterator();
 			while(itr.hasNext()){
 				Entry<SelectionKey, Long> node_record = itr.next();
 				//System.out.println("Node have "+node_record.getKey().toString()+"--"+nodes.get(node_record.getKey()));
 				long now_time = System.currentTimeMillis();
 				if(now_time -node_record.getValue()>timeout*1000){
-					System.out.println("Node "+host_list.get(node_record.getKey())+" is offline!");
+					ml.log("Node "+host_list.get(node_record.getKey())+" is offline!");
 					heart_list.remove(node_record.getKey());
 				}
 			}

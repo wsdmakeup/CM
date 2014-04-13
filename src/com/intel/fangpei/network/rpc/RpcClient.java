@@ -16,7 +16,8 @@ public class RpcClient {
 	private static RpcClient rpc = null;
 	private RpcClient(){
 		try {
-			String serverip = ConfManager.getConf("selectsocket.server.ip");
+			String serverip = "127.0.0.1";
+					//ConfManager.getConf("selectsocket.server.ip");
 			int     rpcport = ConfManager.getInt("selectsocket.rpc.port", 1235);
 			if(serverip == null){
 				System.out.println("Cann't find RPC Server IP,Exit!");
